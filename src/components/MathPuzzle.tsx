@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Star, RefreshCw, CheckCircle2, XCircle } from 'lucide-react';
+import { Trophy, Star, RefreshCw, CheckCircle2, XCircle, Gem } from 'lucide-react';
 
 export const MathPuzzle: React.FC = () => {
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | 'impossible'>('easy');
@@ -200,10 +200,22 @@ export const MathPuzzle: React.FC = () => {
                 initial={{ scale: 0, rotate: -20 }}
                 animate={{ scale: 1, rotate: 0 }}
                 exit={{ scale: 0 }}
-                className="flex items-center gap-2 text-green-500 font-black text-2xl"
+                className="flex flex-col items-center gap-2 text-green-500 font-black text-2xl"
               >
-                <CheckCircle2 size={32} strokeWidth={3} />
-                <span>SUPER! 🌈</span>
+                <motion.div
+                  animate={{ 
+                    y: [0, -20, 0],
+                    rotate: [0, 15, -15, 0],
+                    scale: [1, 1.2, 1]
+                  }}
+                  transition={{ duration: 1, repeat: Infinity }}
+                >
+                  <Gem size={48} className="text-emerald-500" />
+                </motion.div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={32} strokeWidth={3} />
+                  <span>SUPER! 🌈</span>
+                </div>
               </motion.div>
             )}
             {feedback === 'wrong' && (

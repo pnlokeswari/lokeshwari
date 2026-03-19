@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Star, Trophy, RefreshCw, CheckCircle2, Sparkles } from 'lucide-react';
+import { Star, Trophy, RefreshCw, CheckCircle2, Sparkles, Gem } from 'lucide-react';
 
 interface OppositePair {
   id: string;
@@ -38,6 +38,7 @@ export const OppositesGame: React.FC = () => {
   const [matches, setMatches] = useState<Record<string, string>>({}); // leftId -> rightId
   const [score, setScore] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
+  const [showGem, setShowGem] = useState(false);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const leftRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -103,6 +104,8 @@ export const OppositesGame: React.FC = () => {
       setMatches(newMatches);
       setSelectedLeft(null);
       setScore(s => s + 20);
+      setShowGem(true);
+      setTimeout(() => setShowGem(false), 1500);
 
       if (Object.keys(newMatches).length === leftWords.length) {
         setIsComplete(true);
@@ -221,6 +224,26 @@ export const OppositesGame: React.FC = () => {
         </div>
 
         <AnimatePresence>
+          {showGem && (
+            <motion.div
+              initial={{ scale: 0, y: 50, opacity: 0 }}
+              animate={{ scale: 1, y: -20, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 flex flex-col items-center"
+            >
+              <motion.div
+                animate={{ 
+                  rotate: [0, 15, -15, 0],
+                  scale: [1, 1.2, 1]
+                }}
+                transition={{ duration: 0.5, repeat: 2 }}
+              >
+                <Gem size={64} className="text-emerald-500 drop-shadow-lg" />
+              </motion.div>
+              <span className="text-emerald-600 font-black text-xl uppercase tracking-widest mt-2">MATCH! 💎</span>
+            </motion.div>
+          )}
+
           {isComplete && (
             <motion.div
               initial={{ opacity: 0, scale: 0.5 }}
