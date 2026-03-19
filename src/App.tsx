@@ -8,6 +8,7 @@ import { AddCityModal } from './components/AddCityModal';
 import { TimeConverter } from './components/TimeConverter';
 import { MathPuzzle } from './components/MathPuzzle';
 import { OppositesGame } from './components/OppositesGame';
+import { MissingNumbers } from './components/MissingNumbers';
 
 export default function App() {
   const [addedCities, setAddedCities] = useState<City[]>(() => {
@@ -142,6 +143,7 @@ export default function App() {
             <div className="sticky top-24 space-y-8">
               <MathPuzzle />
               <OppositesGame />
+              <MissingNumbers />
             </div>
           </div>
         </div>
