@@ -200,6 +200,7 @@ export const MathPuzzle: React.FC = () => {
           <AnimatePresence mode="wait">
             {feedback?.type === 'correct' && (
               <motion.div
+                key="feedback-correct"
                 initial={{ scale: 0, rotate: -20 }}
                 animate={{ scale: 1, rotate: 0 }}
                 exit={{ scale: 0 }}
@@ -223,6 +224,7 @@ export const MathPuzzle: React.FC = () => {
             )}
             {feedback?.type === 'wrong' && (
               <motion.div
+                key="feedback-wrong"
                 initial={{ x: [-10, 10, -10, 10, 0] }}
                 className="flex flex-col items-center gap-2 text-red-500 font-black text-2xl"
               >

@@ -229,6 +229,7 @@ export const OppositesGame: React.FC = () => {
         <AnimatePresence>
           {matchFeedback && (
             <motion.div
+              key={`match-${matchFeedback}`}
               initial={{ scale: 0, y: 50, opacity: 0 }}
               animate={{ scale: 1, y: -20, opacity: 1 }}
               exit={{ scale: 0, opacity: 0 }}
@@ -249,6 +250,7 @@ export const OppositesGame: React.FC = () => {
 
           {isComplete && (
             <motion.div
+              key="game-complete"
               initial={{ opacity: 0, scale: 0.5 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.5 }}

@@ -228,6 +228,7 @@ export const MissingNumbers: React.FC = () => {
             <AnimatePresence>
               {matchFeedback && (
                 <motion.div
+                  key={`match-${matchFeedback}`}
                   initial={{ scale: 0, y: 20, opacity: 0 }}
                   animate={{ scale: 1, y: -40, opacity: 1 }}
                   exit={{ scale: 0, opacity: 0 }}
@@ -248,6 +249,7 @@ export const MissingNumbers: React.FC = () => {
 
               {isComplete && (
                 <motion.div
+                  key="game-complete"
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   className="absolute inset-0 z-50 bg-amber-900/40 backdrop-blur-md flex items-center justify-center p-8"

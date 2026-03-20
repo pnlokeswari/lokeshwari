@@ -61,6 +61,19 @@ const NUMBER_WORDS: Record<number, string> = {
 
 const CELEBRATION_EMOJIS = ['😊', '😄', '⭐', '✨', '❤️', '🎉', '👍', '🚀', '🐶', '🦄', '🌈'];
 
+const THEMES = [
+  { name: 'Pink Kingdom', bg: 'bg-pink-50', border: 'border-pink-200', text: 'text-pink-600', accent: 'bg-pink-100', emoji: '🏰' },
+  { name: 'Ocean Quest', bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-600', accent: 'bg-blue-100', emoji: '🌊' },
+  { name: 'Jungle Safari', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-600', accent: 'bg-emerald-100', emoji: '🦁' },
+  { name: 'Desert Treasure', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-600', accent: 'bg-amber-100', emoji: '🏜️' },
+  { name: 'Space Voyage', bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-600', accent: 'bg-purple-100', emoji: '🚀' },
+  { name: 'Cloud Garden', bg: 'bg-sky-50', border: 'border-sky-200', text: 'text-sky-600', accent: 'bg-sky-100', emoji: '☁️' },
+  { name: 'Dino Valley', bg: 'bg-stone-50', border: 'border-stone-200', text: 'text-stone-600', accent: 'bg-stone-100', emoji: '🦖' },
+  { name: 'Rainbow Peak', bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-600', accent: 'bg-rose-100', emoji: '🌈' },
+  { name: 'Magic Forest', bg: 'bg-lime-50', border: 'border-lime-200', text: 'text-lime-600', accent: 'bg-lime-100', emoji: '🌲' },
+  { name: 'Starry Night', bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-600', accent: 'bg-indigo-100', emoji: '✨' },
+];
+
 export const NumberMatch: React.FC = () => {
   const [numbers, setNumbers] = useState<number[]>([]);
   const [shuffledNumbers, setShuffledNumbers] = useState<number[]>([]);
@@ -72,6 +85,7 @@ export const NumberMatch: React.FC = () => {
   const [activeIcon, setActiveIcon] = useState(ICONS[0]);
   const [lastMatch, setLastMatch] = useState<{ value: number; emoji: string } | null>(null);
   const [gameMode, setGameMode] = useState<'count' | 'word'>('count');
+  const [theme, setTheme] = useState(THEMES[0]);
 
   const initGame = useCallback(() => {
     // Randomly choose between 1-5 or 6-10
@@ -89,6 +103,7 @@ export const NumberMatch: React.FC = () => {
     setMatches([]);
     setIsComplete(false);
     setActiveIcon(ICONS[Math.floor(Math.random() * ICONS.length)]);
+    setTheme(THEMES[Math.floor(Math.random() * THEMES.length)]);
     setLastMatch(null);
   }, []);
 
@@ -129,46 +144,49 @@ export const NumberMatch: React.FC = () => {
     <motion.div
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
-      className="bg-white rounded-[2.5rem] border-4 border-pink-300 p-8 shadow-xl shadow-pink-100 relative overflow-hidden"
+      className={`rounded-[3rem] border-8 ${theme.border} ${theme.bg} p-10 shadow-2xl relative overflow-hidden min-h-[800px] flex flex-col`}
     >
-      <div className="absolute -top-4 -right-4 text-pink-200 opacity-50 rotate-12">
-        <Heart size={64} fill="currentColor" />
+      <div className={`absolute -top-8 -right-8 ${theme.text} opacity-10 rotate-12`}>
+        <Heart size={128} fill="currentColor" />
       </div>
 
-      <div className="relative z-10">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2 bg-pink-100 px-4 py-2 rounded-2xl border-2 border-pink-200">
-            <Trophy className="text-pink-600" size={20} />
-            <span className="font-black text-pink-800 uppercase tracking-wider text-sm">Score: {score}</span>
+      <div className="relative z-10 flex-1 flex flex-col">
+        <div className="flex items-center justify-between mb-10">
+          <div className={`flex items-center gap-3 ${theme.accent} px-6 py-3 rounded-[2rem] border-4 ${theme.border} shadow-sm`}>
+            <Trophy className={theme.text} size={28} />
+            <span className={`font-black ${theme.text} uppercase tracking-widest text-xl`}>Score: {score}</span>
           </div>
           <button
             onClick={initGame}
-            className="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2 rounded-xl transition-all active:scale-95 border-b-4 border-slate-300"
+            className="bg-white hover:bg-slate-50 text-slate-600 p-4 rounded-2xl transition-all active:scale-95 border-b-8 border-slate-200 shadow-lg"
           >
-            <RefreshCw size={18} strokeWidth={3} />
+            <RefreshCw size={28} strokeWidth={4} />
           </button>
         </div>
 
-        <h2 className="text-2xl font-black text-pink-600 text-center mb-6 uppercase tracking-tight">
-          Match the Numbers! 🎨
+        <h2 className={`text-5xl font-black ${theme.text} text-center mb-2 uppercase tracking-tighter drop-shadow-sm`}>
+          {theme.name} {theme.emoji}
         </h2>
+        <p className="text-center text-slate-400 font-bold mb-10 uppercase tracking-widest text-xs">
+          Find the matching pairs!
+        </p>
 
-        <div className="grid grid-cols-2 gap-8">
+        <div className="grid grid-cols-2 gap-12 flex-1">
           {/* Numbers Column */}
-          <div className="flex flex-col gap-4">
-            <span className="text-center text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Number</span>
+          <div className="flex flex-col gap-6">
+            <span className="text-center text-xs font-black uppercase tracking-[0.3em] text-slate-400 mb-2">The Number</span>
             {shuffledNumbers.map((num) => (
               <motion.button
                 key={`num-${num}`}
-                whileHover={{ scale: matches.includes(num) ? 1 : 1.05 }}
-                whileTap={{ scale: matches.includes(num) ? 1 : 0.95 }}
+                whileHover={matches.includes(num) ? {} : { scale: 1.05, rotate: 2 }}
+                whileTap={matches.includes(num) ? {} : { scale: 0.9 }}
                 onClick={() => handleItemClick(num, 'number')}
-                className={`h-16 rounded-2xl border-4 text-2xl font-black transition-all flex items-center justify-center ${
+                className={`h-36 rounded-[2.5rem] border-8 text-8xl font-black transition-all flex items-center justify-center shadow-xl ${
                   matches.includes(num)
-                    ? 'bg-green-100 border-green-400 text-green-600 cursor-default'
+                    ? 'bg-green-500 border-green-700 text-white cursor-default scale-95 opacity-50'
                     : selected?.id === `number-${num}`
-                    ? 'bg-pink-500 border-pink-700 text-white shadow-lg'
-                    : 'bg-white border-pink-100 text-slate-700 hover:border-pink-300'
+                    ? 'bg-white border-blue-500 text-blue-600 ring-8 ring-blue-200'
+                    : 'bg-white border-white text-slate-800 hover:border-slate-200'
                 }`}
               >
                 {num}
@@ -177,38 +195,44 @@ export const NumberMatch: React.FC = () => {
           </div>
 
           {/* Targets Column */}
-          <div className="flex flex-col gap-4">
-            <span className="text-center text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
-              {gameMode === 'count' ? 'Count' : 'Word'}
+          <div className="flex flex-col gap-6">
+            <span className="text-center text-xs font-black uppercase tracking-[0.3em] text-slate-400 mb-2">
+              {gameMode === 'count' ? 'How Many?' : 'The Word'}
             </span>
             {shuffledTargets.map((num) => (
               <motion.button
                 key={`target-${num}`}
-                whileHover={{ scale: matches.includes(num) ? 1 : 1.05 }}
-                whileTap={{ scale: matches.includes(num) ? 1 : 0.95 }}
+                whileHover={matches.includes(num) ? {} : { scale: 1.05, rotate: -2 }}
+                whileTap={matches.includes(num) ? {} : { scale: 0.9 }}
                 onClick={() => handleItemClick(num, 'target')}
-                className={`h-16 rounded-2xl border-4 transition-all flex items-center justify-center overflow-hidden ${
+                className={`h-36 rounded-[2.5rem] border-8 transition-all flex items-center justify-center overflow-hidden shadow-xl ${
                   matches.includes(num)
-                    ? 'bg-green-100 border-green-400 text-green-600 cursor-default'
+                    ? 'bg-green-500 border-green-700 text-white cursor-default scale-95 opacity-50'
                     : selected?.id === `target-${num}`
-                    ? 'bg-pink-500 border-pink-700 text-white shadow-lg'
-                    : 'bg-white border-pink-100 text-slate-700 hover:border-pink-300'
+                    ? 'bg-white border-blue-500 text-blue-600 ring-8 ring-blue-200'
+                    : 'bg-white border-white text-slate-800 hover:border-slate-200'
                 }`}
               >
                 {gameMode === 'count' ? (
-                  <div className="flex flex-wrap justify-center gap-1 p-2">
+                  <div className="flex flex-wrap justify-center items-center gap-4 p-6 max-w-full">
                     {Array.from({ length: num }).map((_, i) => (
-                      <IconComponent 
-                        key={i} 
-                        size={14} 
-                        className={matches.includes(num) ? iconColor : 'text-slate-300'}
-                        fill={matches.includes(num) ? 'currentColor' : 'none'} 
-                        strokeWidth={3} 
-                      />
+                      <motion.div
+                        key={i}
+                        whileTap={{ scale: 1.5 }}
+                        animate={matches.includes(num) ? { scale: [1, 1.3, 1], rotate: [0, 10, -10, 0] } : {}}
+                        transition={{ duration: 0.5, delay: i * 0.1 }}
+                      >
+                        <IconComponent 
+                          size={48} 
+                          className={matches.includes(num) ? 'text-white' : iconColor}
+                          fill={matches.includes(num) ? 'currentColor' : 'none'} 
+                          strokeWidth={4} 
+                        />
+                      </motion.div>
                     ))}
                   </div>
                 ) : (
-                  <span className={`text-lg font-black ${matches.includes(num) ? 'text-green-600' : 'text-slate-700'}`}>
+                  <span className={`text-4xl font-black uppercase tracking-tighter ${matches.includes(num) ? 'text-white' : theme.text}`}>
                     {NUMBER_WORDS[num]}
                   </span>
                 )}
@@ -220,6 +244,7 @@ export const NumberMatch: React.FC = () => {
         <AnimatePresence>
           {lastMatch !== null && (
             <motion.div
+              key={`match-${lastMatch.value}-${lastMatch.emoji}`}
               initial={{ scale: 0, opacity: 0, y: 20 }}
               animate={{ scale: 1.5, opacity: 1, y: -50 }}
               exit={{ scale: 0, opacity: 0 }}
@@ -234,6 +259,7 @@ export const NumberMatch: React.FC = () => {
           
           {isComplete && (
             <motion.div
+              key="game-complete"
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0, opacity: 0 }}
