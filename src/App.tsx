@@ -10,6 +10,7 @@ import { MathPuzzle } from './components/MathPuzzle';
 import { OppositesGame } from './components/OppositesGame';
 import { MissingNumbers } from './components/MissingNumbers';
 import { NumberMatch } from './components/NumberMatch';
+import { FoodGroupGame } from './components/FoodGroupGame';
 
 export default function App() {
   const [addedCities, setAddedCities] = useState<City[]>(() => {
@@ -143,6 +144,7 @@ export default function App() {
           <div className="lg:col-span-4 space-y-8">
             <div className="sticky top-24 space-y-8">
               <MathPuzzle />
+              <FoodGroupGame />
               <NumberMatch />
               <OppositesGame />
               <MissingNumbers />
