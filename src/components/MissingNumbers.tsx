@@ -9,15 +9,17 @@ interface GameState {
   correctAnswers: Record<number, number>;
 }
 
+const CELEBRATION_EMOJIS = ['😊', '😄', '⭐', '✨', '❤️', '🎉', '👍', '🚀', '🐶', '🦄', '🌈'];
+
 export const MissingNumbers: React.FC = () => {
   const [level, setLevel] = useState(1);
   const [score, setScore] = useState(0);
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
   const [activeGapIdx, setActiveGapIdx] = useState<number | null>(null);
-  const [feedback, setFeedback] = useState<{ idx: number; type: 'correct' | 'wrong' } | null>(null);
+  const [feedback, setFeedback] = useState<{ idx: number; type: 'correct' | 'wrong'; emoji?: string } | null>(null);
   const [isComplete, setIsComplete] = useState(false);
-  const [showGem, setShowGem] = useState(false);
+  const [matchFeedback, setMatchFeedback] = useState<string | null>(null);
 
   const generateGame = (currentLevel: number) => {
     const sequenceLength = 5;
@@ -73,10 +75,11 @@ export const MissingNumbers: React.FC = () => {
     if (isCorrect) {
       const newAnswers = { ...selectedAnswers, [activeGapIdx]: option };
       setSelectedAnswers(newAnswers);
-      setFeedback({ idx: activeGapIdx, type: 'correct' });
+      const emoji = CELEBRATION_EMOJIS[Math.floor(Math.random() * CELEBRATION_EMOJIS.length)];
+      setFeedback({ idx: activeGapIdx, type: 'correct', emoji });
       setScore(s => s + 20);
-      setShowGem(true);
-      setTimeout(() => setShowGem(false), 1000);
+      setMatchFeedback(emoji);
+      setTimeout(() => setMatchFeedback(null), 1000);
 
       // Find next empty gap
       const nextGap = gameState.missingIndices.find(idx => !newAnswers[idx]);
@@ -93,7 +96,7 @@ export const MissingNumbers: React.FC = () => {
         }, 2000);
       }
     } else {
-      setFeedback({ idx: activeGapIdx, type: 'wrong' });
+      setFeedback({ idx: activeGapIdx, type: 'wrong', emoji: '🚀' });
       setScore(s => Math.max(0, s - 5));
       setTimeout(() => setFeedback(null), 1000);
     }
@@ -223,7 +226,7 @@ export const MissingNumbers: React.FC = () => {
 
             {/* Success Overlay */}
             <AnimatePresence>
-              {showGem && (
+              {matchFeedback && (
                 <motion.div
                   initial={{ scale: 0, y: 20, opacity: 0 }}
                   animate={{ scale: 1, y: -40, opacity: 1 }}
@@ -237,9 +240,9 @@ export const MissingNumbers: React.FC = () => {
                     }}
                     transition={{ duration: 0.4, repeat: 2 }}
                   >
-                    <Gem size={72} className="text-amber-500 drop-shadow-xl" />
+                    <span className="text-7xl drop-shadow-xl">{matchFeedback}</span>
                   </motion.div>
-                  <span className="text-amber-600 font-black text-2xl uppercase tracking-tighter mt-2">FOUND! 💎</span>
+                  <span className="text-amber-600 font-black text-2xl uppercase tracking-tighter mt-2">GREAT JOB! ✨</span>
                 </motion.div>
               )}
 
@@ -247,23 +250,23 @@ export const MissingNumbers: React.FC = () => {
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="absolute inset-0 z-50 bg-amber-900/20 backdrop-blur-sm flex items-center justify-center p-8"
+                  className="absolute inset-0 z-50 bg-amber-900/40 backdrop-blur-md flex items-center justify-center p-8"
                 >
                   <motion.div 
                     initial={{ y: 50 }}
                     animate={{ y: 0 }}
-                    className="bg-white rounded-[3rem] p-10 text-center shadow-2xl border-8 border-amber-400"
+                    className="bg-white rounded-[3rem] p-10 text-center shadow-2xl border-8 border-amber-400 max-w-sm w-full"
                   >
-                    <div className="flex justify-center mb-6">
-                      <div className="relative">
-                        <Gem size={80} className="text-amber-500 animate-bounce" />
-                        <Sparkles className="absolute -top-4 -right-4 text-yellow-400 animate-pulse" size={32} />
-                      </div>
+                    <div className="flex justify-center gap-4 mb-6">
+                      <span className="text-6xl">🌈</span>
+                      <span className="text-6xl">🦄</span>
+                      <span className="text-6xl">🎉</span>
                     </div>
-                    <h3 className="text-4xl font-black text-amber-900 uppercase tracking-tighter mb-2">
-                      Island Cleared!
+                    <h3 className="text-4xl font-black text-amber-900 uppercase tracking-tighter mb-2 leading-none">
+                      ISLAND CLEARED! 🌟
                     </h3>
-                    <p className="text-amber-600 font-bold">You're a master explorer! 🌟</p>
+                    <p className="text-amber-600 font-bold text-lg mt-4">You're a master explorer! ❤️</p>
+                    <p className="text-amber-400 font-bold mt-2">Next island loading... 🚀</p>
                   </motion.div>
                 </motion.div>
               )}

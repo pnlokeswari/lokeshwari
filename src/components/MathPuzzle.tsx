@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trophy, Star, RefreshCw, CheckCircle2, XCircle, Gem } from 'lucide-react';
 
+const CELEBRATION_EMOJIS = ['😊', '😄', '⭐', '✨', '❤️', '🎉', '👍', '🚀', '🐶', '🦄', '🌈'];
+
 export const MathPuzzle: React.FC = () => {
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | 'impossible'>('easy');
   const [problem, setProblem] = useState({ n1: 0, n2: 0, op: '+', ans: 0 });
   const [userInput, setUserInput] = useState('');
-  const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
+  const [feedback, setFeedback] = useState<{ type: 'correct' | 'wrong'; emoji: string } | null>(null);
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
 
@@ -101,12 +103,13 @@ export const MathPuzzle: React.FC = () => {
     e.preventDefault();
     const numAns = parseInt(userInput);
     if (numAns === problem.ans) {
-      setFeedback('correct');
+      const emoji = CELEBRATION_EMOJIS[Math.floor(Math.random() * CELEBRATION_EMOJIS.length)];
+      setFeedback({ type: 'correct', emoji });
       setScore(s => s + 10);
       setStreak(s => s + 1);
       setTimeout(generateProblem, 1500);
     } else {
-      setFeedback('wrong');
+      setFeedback({ type: 'wrong', emoji: '🚀' });
       setScore(s => s - 10);
       setStreak(0);
     }
@@ -195,7 +198,7 @@ export const MathPuzzle: React.FC = () => {
           </form>
 
           <AnimatePresence mode="wait">
-            {feedback === 'correct' && (
+            {feedback?.type === 'correct' && (
               <motion.div
                 initial={{ scale: 0, rotate: -20 }}
                 animate={{ scale: 1, rotate: 0 }}
@@ -210,21 +213,24 @@ export const MathPuzzle: React.FC = () => {
                   }}
                   transition={{ duration: 1, repeat: Infinity }}
                 >
-                  <Gem size={48} className="text-emerald-500" />
+                  <span className="text-5xl">{feedback.emoji}</span>
                 </motion.div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={32} strokeWidth={3} />
-                  <span>SUPER! 🌈</span>
+                  <span>GREAT JOB! 🌈</span>
                 </div>
               </motion.div>
             )}
-            {feedback === 'wrong' && (
+            {feedback?.type === 'wrong' && (
               <motion.div
                 initial={{ x: [-10, 10, -10, 10, 0] }}
-                className="flex items-center gap-2 text-red-500 font-black text-2xl"
+                className="flex flex-col items-center gap-2 text-red-500 font-black text-2xl"
               >
-                <XCircle size={32} strokeWidth={3} />
-                <span>TRY AGAIN! 🚀</span>
+                <span className="text-4xl">🚀</span>
+                <div className="flex items-center gap-2">
+                  <XCircle size={32} strokeWidth={3} />
+                  <span>LET'S GO! ✨</span>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

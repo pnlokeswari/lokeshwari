@@ -30,6 +30,8 @@ const WORD_SETS: OppositePair[][] = [
   ]
 ];
 
+const CELEBRATION_EMOJIS = ['😊', '😄', '⭐', '✨', '❤️', '🎉', '👍', '🚀', '🐶', '🦄', '🌈'];
+
 export const OppositesGame: React.FC = () => {
   const [setIndex, setSetIndex] = useState(0);
   const [leftWords, setLeftWords] = useState<OppositePair[]>([]);
@@ -38,7 +40,7 @@ export const OppositesGame: React.FC = () => {
   const [matches, setMatches] = useState<Record<string, string>>({}); // leftId -> rightId
   const [score, setScore] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
-  const [showGem, setShowGem] = useState(false);
+  const [matchFeedback, setMatchFeedback] = useState<string | null>(null);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const leftRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -104,8 +106,9 @@ export const OppositesGame: React.FC = () => {
       setMatches(newMatches);
       setSelectedLeft(null);
       setScore(s => s + 20);
-      setShowGem(true);
-      setTimeout(() => setShowGem(false), 1500);
+      const emoji = CELEBRATION_EMOJIS[Math.floor(Math.random() * CELEBRATION_EMOJIS.length)];
+      setMatchFeedback(emoji);
+      setTimeout(() => setMatchFeedback(null), 1500);
 
       if (Object.keys(newMatches).length === leftWords.length) {
         setIsComplete(true);
@@ -224,7 +227,7 @@ export const OppositesGame: React.FC = () => {
         </div>
 
         <AnimatePresence>
-          {showGem && (
+          {matchFeedback && (
             <motion.div
               initial={{ scale: 0, y: 50, opacity: 0 }}
               animate={{ scale: 1, y: -20, opacity: 1 }}
@@ -238,9 +241,9 @@ export const OppositesGame: React.FC = () => {
                 }}
                 transition={{ duration: 0.5, repeat: 2 }}
               >
-                <Gem size={64} className="text-emerald-500 drop-shadow-lg" />
+                <span className="text-6xl drop-shadow-lg">{matchFeedback}</span>
               </motion.div>
-              <span className="text-emerald-600 font-black text-xl uppercase tracking-widest mt-2">MATCH! 💎</span>
+              <span className="text-emerald-600 font-black text-xl uppercase tracking-widest mt-2">GREAT JOB! ✨</span>
             </motion.div>
           )}
 
@@ -249,19 +252,22 @@ export const OppositesGame: React.FC = () => {
               initial={{ opacity: 0, scale: 0.5 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.5 }}
-              className="absolute inset-0 z-20 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center rounded-[2rem]"
+              className="absolute inset-0 z-20 bg-white/95 backdrop-blur-md flex flex-col items-center justify-center rounded-[2rem] p-8 text-center"
             >
               <motion.div
                 animate={{ rotate: [0, 10, -10, 10, 0], scale: [1, 1.2, 1] }}
                 transition={{ repeat: Infinity, duration: 2 }}
-                className="text-emerald-500 mb-4"
+                className="flex gap-4 mb-6"
               >
-                <CheckCircle2 size={80} strokeWidth={3} />
+                <span className="text-6xl">🌈</span>
+                <span className="text-6xl">🐶</span>
+                <span className="text-6xl">✨</span>
               </motion.div>
-              <h3 className="text-3xl font-black text-emerald-600 uppercase tracking-tighter">
-                Amazing Job! 🌟
+              <h3 className="text-4xl font-black text-emerald-600 uppercase tracking-tighter">
+                AMAZING JOB! 🌟
               </h3>
-              <p className="text-slate-500 font-bold mt-2">Next level coming up...</p>
+              <p className="text-slate-500 font-bold mt-4 text-lg">You're a superstar! ❤️</p>
+              <p className="text-slate-400 font-bold mt-2">Next level coming up... 🚀</p>
             </motion.div>
           )}
         </AnimatePresence>
