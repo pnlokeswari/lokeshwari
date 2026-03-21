@@ -45,9 +45,6 @@ const INITIAL_ACHIEVEMENTS: Achievement[] = [
   
   // Food Group Game
   { id: 'nutritionist', title: 'Nutritionist', description: 'Finish 10 Food Group rounds', emoji: '🍎', unlocked: false, claimed: false, reward: 50, gameId: 'food-group-game' },
-  
-  // Animal Sounds Game
-  { id: 'animal-expert', title: 'Animal Expert', description: 'Identify 10 animals by sound', emoji: '🦁', unlocked: false, claimed: false, reward: 50, gameId: 'animal-sounds-game' },
 ];
 
 const AchievementsContext = createContext<AchievementsContextType | undefined>(undefined);
