@@ -46,33 +46,62 @@ export const AnimalSoundsGame: React.FC = () => {
   }, [generateRound]);
 
   const [audioError, setAudioError] = useState<string | null>(null);
+  const audioContextRef = React.useRef<AudioContext | null>(null);
 
-  const testAudio = () => {
-    try {
+  const [audioStatus, setAudioStatus] = useState<'locked' | 'ready'>('locked');
+
+  useEffect(() => {
+    const checkStatus = () => {
+      if (audioContextRef.current) {
+        setAudioStatus(audioContextRef.current.state === 'running' ? 'ready' : 'locked');
+      }
+    };
+    const interval = setInterval(checkStatus, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const getAudioContext = () => {
+    if (!audioContextRef.current) {
       const AudioContextClass = (window.AudioContext || (window as any).webkitAudioContext);
-      const audioContext = new AudioContextClass();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
+      audioContextRef.current = new AudioContextClass({ sampleRate: 24000 });
+    }
+    if (audioContextRef.current.state === 'suspended') {
+      audioContextRef.current.resume().then(() => setAudioStatus('ready'));
+    } else {
+      setAudioStatus('ready');
+    }
+    return audioContextRef.current;
+  };
+
+  const testAudio = async () => {
+    try {
+      const ctx = getAudioContext();
+      const oscillator = ctx.createOscillator();
+      const gainNode = ctx.createGain();
 
       oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
+      gainNode.connect(ctx.destination);
 
       oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
-      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+      oscillator.frequency.setValueAtTime(440, ctx.currentTime);
+      gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
 
       oscillator.start();
-      oscillator.stop(audioContext.currentTime + 0.5);
+      oscillator.stop(ctx.currentTime + 0.5);
       console.log('Test beep played');
+      setAudioError(null);
     } catch (e) {
       console.error('Audio test failed:', e);
-      setAudioError('Browser audio blocked');
+      setAudioError('Audio blocked by browser');
     }
   };
 
   const playSound = async () => {
     if (isLoading) return;
     setAudioError(null);
+    
+    // Ensure AudioContext is ready on user click
+    const ctx = getAudioContext();
     
     if (audioUrl) {
       playPcm(audioUrl.split(',')[1] || audioUrl);
@@ -81,11 +110,12 @@ export const AnimalSoundsGame: React.FC = () => {
 
     setIsLoading(true);
     try {
-      if (!process.env.GEMINI_API_KEY) {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
         throw new Error('API Key missing');
       }
 
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
         contents: [{ parts: [{ text: currentAnimal.sound }] }],
@@ -114,15 +144,11 @@ export const AnimalSoundsGame: React.FC = () => {
     }
   };
 
-  const playPcm = (base64Data: string) => {
+  const playPcm = async (base64Data: string) => {
     try {
-      const AudioContextClass = (window.AudioContext || (window as any).webkitAudioContext);
-      const audioContext = new AudioContextClass({ sampleRate: 24000 });
+      const ctx = getAudioContext();
+      console.log('Playing PCM, context state:', ctx.state);
       
-      if (audioContext.state === 'suspended') {
-        audioContext.resume();
-      }
-
       const binaryString = atob(base64Data);
       const arrayBuffer = new ArrayBuffer(binaryString.length);
       const uint8Array = new Uint8Array(arrayBuffer);
@@ -135,25 +161,19 @@ export const AnimalSoundsGame: React.FC = () => {
       const float32Data = new Float32Array(binaryString.length / 2);
       
       for (let i = 0; i < float32Data.length; i++) {
-        // Gemini L16 is little-endian (true)
         float32Data[i] = dataView.getInt16(i * 2, true) / 32768.0;
       }
       
-      const buffer = audioContext.createBuffer(1, float32Data.length, 24000);
+      const buffer = ctx.createBuffer(1, float32Data.length, 24000);
       buffer.getChannelData(0).set(float32Data);
       
-      const source = audioContext.createBufferSource();
+      const source = ctx.createBufferSource();
       source.buffer = buffer;
-      source.connect(audioContext.destination);
-      
-      source.onended = () => {
-        audioContext.close();
-      };
-      
+      source.connect(ctx.destination);
       source.start();
-      console.log('Audio playback started');
     } catch (e) {
       console.error('Failed to play PCM audio:', e);
+      setAudioError('Playback error');
     }
   };
 
@@ -174,6 +194,42 @@ export const AnimalSoundsGame: React.FC = () => {
       setTimeout(() => setFeedback(null), 1000);
     }
   };
+
+  const [gameStarted, setGameStarted] = useState(false);
+
+  const startGame = () => {
+    getAudioContext();
+    setGameStarted(true);
+  };
+
+  if (!gameStarted) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-white rounded-[2.5rem] border-4 border-pink-300 p-12 shadow-xl shadow-pink-100 flex flex-col items-center justify-center text-center gap-8 min-h-[400px]"
+      >
+        <div className="bg-pink-100 p-6 rounded-[2rem] border-4 border-pink-200">
+          <Volume2 className="text-pink-600" size={64} />
+        </div>
+        <div>
+          <h2 className="text-4xl font-black text-slate-800 uppercase tracking-tight mb-2">Sound Safari</h2>
+          <p className="text-slate-500 font-bold uppercase tracking-widest">Ready to hear the animals?</p>
+        </div>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={startGame}
+          className="bg-pink-500 hover:bg-pink-600 text-white font-black py-4 px-12 rounded-2xl shadow-lg border-b-8 border-pink-700 uppercase tracking-widest text-xl"
+        >
+          Start Safari 🦁
+        </motion.button>
+        <p className="text-xs text-slate-400 font-bold uppercase tracking-tighter">
+          Clicking start enables sound for the game
+        </p>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -228,14 +284,22 @@ export const AnimalSoundsGame: React.FC = () => {
             <p className="text-slate-600 font-black uppercase tracking-widest text-sm">
               {isLoading ? 'Generating Sound...' : audioError ? `Error: ${audioError}` : 'Click to hear the animal!'}
             </p>
-            {audioError && (
+            <div className="flex gap-4">
+              {audioStatus === 'locked' && (
+                <button 
+                  onClick={() => getAudioContext()}
+                  className="text-xs font-black text-pink-500 underline uppercase tracking-wider"
+                >
+                  Unlock Audio
+                </button>
+              )}
               <button 
                 onClick={testAudio}
-                className="text-xs font-black text-pink-500 underline uppercase tracking-wider"
+                className="text-xs font-black text-slate-400 underline uppercase tracking-wider"
               >
-                Try Audio Test Beep
+                Test Beep
               </button>
-            )}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4 w-full">
