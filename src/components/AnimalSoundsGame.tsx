@@ -71,7 +71,34 @@ export const AnimalSoundsGame: React.FC = () => {
 
       const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
       if (base64Audio) {
-        const url = `data:audio/wav;base64,${base64Audio}`;
+        // Gemini TTS returns raw PCM 16-bit mono at 24000Hz.
+        // We need to add a WAV header to make it playable by the browser's Audio element.
+        const pcmData = Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0));
+        const wavHeader = new ArrayBuffer(44);
+        const view = new DataView(wavHeader);
+        
+        // RIFF chunk descriptor
+        view.setUint32(0, 0x52494646, false); // "RIFF"
+        view.setUint32(4, 36 + pcmData.length, true); // chunk size
+        view.setUint32(8, 0x57415645, false); // "WAVE"
+        
+        // "fmt " sub-chunk
+        view.setUint32(12, 0x666d7420, false); // "fmt "
+        view.setUint32(16, 16, true); // subchunk1size (16 for PCM)
+        view.setUint16(20, 1, true); // audio format (1 for PCM)
+        view.setUint16(22, 1, true); // num channels (1 for mono)
+        view.setUint32(24, 24000, true); // sample rate (24000Hz)
+        view.setUint32(28, 24000 * 2, true); // byte rate (SampleRate * NumChannels * BitsPerSample/8)
+        view.setUint16(32, 2, true); // block align (NumChannels * BitsPerSample/8)
+        view.setUint16(34, 16, true); // bits per sample (16 bits)
+        
+        // "data" sub-chunk
+        view.setUint32(36, 0x64617461, false); // "data"
+        view.setUint32(40, pcmData.length, true); // subchunk2size
+        
+        const blob = new Blob([wavHeader, pcmData], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        
         setAudioUrl(url);
         const audio = new Audio(url);
         audio.play();
