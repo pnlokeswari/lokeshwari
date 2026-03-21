@@ -3,8 +3,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { 
   Trophy, RefreshCw, Star, CheckCircle2, Sparkles, 
-  Apple, Carrot, Wheat, Beef, Milk, Utensils, Heart
+  Apple, Carrot, Wheat, Beef, Milk, Utensils, Heart, Gem
 } from 'lucide-react';
+import { useGems } from '../context/GemsContext';
+import { useAchievements } from '../context/AchievementsContext';
 
 interface FoodItem {
   name: string;
@@ -135,6 +137,8 @@ const FOOD_GROUPS: FoodGroup[] = [
 ];
 
 export const FoodGroupGame: React.FC = () => {
+  const { totalGems, addGems } = useGems();
+  const { unlockAchievement } = useAchievements();
   const [targetGroup, setTargetGroup] = useState<FoodGroup>(FOOD_GROUPS[0]);
   const [displayItems, setDisplayItems] = useState<(FoodItem & { isCorrect: boolean })[]>([]);
   const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
@@ -152,6 +156,10 @@ export const FoodGroupGame: React.FC = () => {
   const [roundsPlayed, setRoundsPlayed] = useState(() => {
     const saved = localStorage.getItem('food-group-rounds');
     return saved ? parseInt(saved) : 0;
+  });
+  const [level, setLevel] = useState(() => {
+    const saved = localStorage.getItem('food-group-level');
+    return saved ? parseInt(saved) : 1;
   });
 
   const progress = useMemo(() => (roundsPlayed % 10) + 1, [roundsPlayed]);
@@ -207,6 +215,7 @@ export const FoodGroupGame: React.FC = () => {
       const newSelected = [...selectedIndices, index];
       setSelectedIndices(newSelected);
       setScore(s => s + 10);
+      addGems(2);
       
       // Check if all correct items are found
       const correctCount = displayItems.filter(i => i.isCorrect).length;
@@ -215,7 +224,8 @@ export const FoodGroupGame: React.FC = () => {
       }
     } else {
       // Wrong item
-      setScore(s => Math.max(0, s - 5));
+      setScore(s => s - 5);
+      addGems(-1);
       setFeedback({ emoji: '❌', text: 'Oops! Not a ' + targetGroup.name.slice(0, -1) });
       setTimeout(() => setFeedback(null), 1500);
     }
@@ -226,6 +236,14 @@ export const FoodGroupGame: React.FC = () => {
     const newRounds = roundsPlayed + 1;
     setRoundsPlayed(newRounds);
     localStorage.setItem('food-group-rounds', newRounds.toString());
+
+    const nextLevel = level + 1;
+    setLevel(nextLevel);
+    localStorage.setItem('food-group-level', nextLevel.toString());
+
+    if (newRounds >= 10) {
+      unlockAchievement('nutritionist');
+    }
 
     const newHistory = [targetGroup.id, ...history].slice(0, 10);
     setHistory(newHistory);
@@ -254,6 +272,12 @@ export const FoodGroupGame: React.FC = () => {
       animate={{ opacity: 1, scale: 1 }}
       className={`rounded-[3rem] border-8 ${targetGroup.border} ${targetGroup.bg} p-10 shadow-2xl relative overflow-hidden min-h-[700px] flex flex-col`}
     >
+      {/* Total Gems Box */}
+      <div className="absolute top-4 right-4 flex items-center gap-2 bg-yellow-100 px-3 py-1.5 rounded-2xl border-2 border-yellow-200 shadow-sm z-20">
+        <Gem className="text-yellow-600" size={18} />
+        <span className="font-black text-yellow-800 text-sm">{totalGems}</span>
+      </div>
+
       {/* Decoration */}
       <div className={`absolute -top-10 -right-10 ${targetGroup.text} opacity-10 rotate-12`}>
         <Utensils size={160} fill="currentColor" />
@@ -266,7 +290,10 @@ export const FoodGroupGame: React.FC = () => {
             <span className={`text-xs font-black uppercase tracking-widest ${targetGroup.text}`}>
               {roundsPlayed % 10 === 0 && roundsPlayed > 0 ? 'Food Master! 👑' : `${progress}/10 Healthy Rounds!`}
             </span>
-            <span className="text-xs font-black text-slate-400">{roundsPlayed} Total</span>
+            <div className="flex items-center gap-4">
+              <span className="text-xs font-black text-slate-400">{roundsPlayed} Total</span>
+              <span className={`text-xs font-black ${targetGroup.text}`}>Level {level}</span>
+            </div>
           </div>
           <div className="h-4 bg-white/50 rounded-full overflow-hidden border-2 border-white shadow-inner">
             <motion.div 

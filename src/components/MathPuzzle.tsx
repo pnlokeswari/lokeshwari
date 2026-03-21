@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Star, RefreshCw, CheckCircle2, XCircle, Gem } from 'lucide-react';
+import { Trophy, Star, RefreshCw, CheckCircle2, XCircle, Gem, Zap } from 'lucide-react';
+import { useGems } from '../context/GemsContext';
+import { useAchievements } from '../context/AchievementsContext';
 
 const CELEBRATION_EMOJIS = ['😊', '😄', '⭐', '✨', '❤️', '🎉', '👍', '🚀', '🐶', '🦄', '🌈'];
 
 export const MathPuzzle: React.FC = () => {
+  const { totalGems, addGems } = useGems();
+  const { unlockAchievement } = useAchievements();
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | 'impossible'>('easy');
   const [problem, setProblem] = useState({ n1: 0, n2: 0, op: '+', ans: 0 });
   const [userInput, setUserInput] = useState('');
   const [feedback, setFeedback] = useState<{ type: 'correct' | 'wrong'; emoji: string } | null>(null);
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
+  const [level, setLevel] = useState(1);
 
   const generateProblem = (currentDiff?: 'easy' | 'medium' | 'hard' | 'impossible') => {
     const diff = currentDiff || difficulty;
@@ -105,12 +110,29 @@ export const MathPuzzle: React.FC = () => {
     if (numAns === problem.ans) {
       const emoji = CELEBRATION_EMOJIS[Math.floor(Math.random() * CELEBRATION_EMOJIS.length)];
       setFeedback({ type: 'correct', emoji });
-      setScore(s => s + 10);
-      setStreak(s => s + 1);
+      
+      const newScore = score + 10;
+      const newStreak = streak + 1;
+      
+      setScore(newScore);
+      setStreak(newStreak);
+      addGems(2);
+      
+      // Level increases every 100 score
+      setLevel(Math.floor(newScore / 100) + 1);
+
+      if (newScore >= 200) {
+        unlockAchievement('speed-math');
+      }
+      if (newStreak >= 10) {
+        unlockAchievement('math-genius');
+      }
+
       setTimeout(generateProblem, 1500);
     } else {
       setFeedback({ type: 'wrong', emoji: '🚀' });
       setScore(s => s - 10);
+      addGems(-2);
       setStreak(0);
     }
   };
@@ -121,6 +143,12 @@ export const MathPuzzle: React.FC = () => {
       animate={{ opacity: 1, x: 0 }}
       className="bg-white rounded-[2.5rem] border-4 border-yellow-300 p-8 shadow-xl shadow-yellow-100 relative overflow-hidden"
     >
+      {/* Total Gems Box */}
+      <div className="absolute top-4 right-4 flex items-center gap-2 bg-yellow-100 px-3 py-1.5 rounded-2xl border-2 border-yellow-200 shadow-sm z-20">
+        <Gem className="text-yellow-600" size={18} />
+        <span className="font-black text-yellow-800 text-sm">{totalGems}</span>
+      </div>
+
       {/* Background Decorations */}
       <div className="absolute -top-4 -left-4 text-yellow-200 opacity-50 rotate-12">
         <Star size={64} fill="currentColor" />
@@ -138,6 +166,10 @@ export const MathPuzzle: React.FC = () => {
           <div className="flex items-center gap-2 bg-orange-100 px-4 py-2 rounded-2xl border-2 border-orange-200">
             <Star className="text-orange-600" size={20} />
             <span className="font-black text-orange-800 uppercase tracking-wider text-sm">Streak: {streak}</span>
+          </div>
+          <div className="flex items-center gap-2 bg-indigo-100 px-4 py-2 rounded-2xl border-2 border-indigo-200">
+            <Zap className="text-indigo-600" size={20} />
+            <span className="font-black text-indigo-800 uppercase tracking-wider text-sm">Level: {level}</span>
           </div>
         </div>
 

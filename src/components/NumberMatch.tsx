@@ -18,8 +18,10 @@ import {
   Shuffle, Smartphone, Speaker, Square, StopCircle, Tablet, Tag, 
   Target, Terminal, Thermometer, ThumbsUp, Ticket, Wrench, Trash, Triangle, 
   Truck, Tv, Unlock, Upload, User, Users, Video, Volume, Watch, Wifi, 
-  Wind, ZapOff, ZoomIn
+  Wind, ZapOff, ZoomIn, Gem
 } from 'lucide-react';
+import { useGems } from '../context/GemsContext';
+import { useAchievements } from '../context/AchievementsContext';
 
 const ICONS = [
   { name: 'Star', icon: Star, color: 'text-yellow-400' },
@@ -196,6 +198,8 @@ const THEMES = [
 ];
 
 export const NumberMatch: React.FC = () => {
+  const { totalGems, addGems } = useGems();
+  const { unlockAchievement } = useAchievements();
   const [numbers, setNumbers] = useState<number[]>([]);
   const [shuffledNumbers, setShuffledNumbers] = useState<number[]>([]);
   const [shuffledTargets, setShuffledTargets] = useState<number[]>([]);
@@ -218,6 +222,10 @@ export const NumberMatch: React.FC = () => {
   const [roundsPlayed, setRoundsPlayed] = useState(() => {
     const saved = localStorage.getItem('number-match-rounds');
     return saved ? parseInt(saved) : 0;
+  });
+  const [level, setLevel] = useState(() => {
+    const saved = localStorage.getItem('number-match-level');
+    return saved ? parseInt(saved) : 1;
   });
 
   const progress = useMemo(() => (roundsPlayed % 10) + 1, [roundsPlayed]);
@@ -265,6 +273,7 @@ export const NumberMatch: React.FC = () => {
         const newMatches = [...matches, value];
         setMatches(newMatches);
         setScore(s => s + 20);
+        addGems(3);
         setSelected(null);
         
         const randomEmoji = CELEBRATION_EMOJIS[Math.floor(Math.random() * CELEBRATION_EMOJIS.length)];
@@ -278,6 +287,14 @@ export const NumberMatch: React.FC = () => {
           const newRounds = roundsPlayed + 1;
           setRoundsPlayed(newRounds);
           localStorage.setItem('number-match-rounds', newRounds.toString());
+          
+          const nextLevel = level + 1;
+          setLevel(nextLevel);
+          localStorage.setItem('number-match-level', nextLevel.toString());
+
+          if (newRounds >= 10) {
+            unlockAchievement('match-master');
+          }
 
           const newHistory = [activeIcon.name, ...history].slice(0, 10);
           setHistory(newHistory);
@@ -301,6 +318,10 @@ export const NumberMatch: React.FC = () => {
         }
       } else {
         // Wrong match or same type clicked
+        if (selected.type !== type && selected.value !== value) {
+          setScore(s => s - 5);
+          addGems(-1);
+        }
         setSelected({ id: `${type}-${value}`, value, type });
       }
     }
@@ -314,6 +335,12 @@ export const NumberMatch: React.FC = () => {
       animate={{ opacity: 1, x: 0 }}
       className={`rounded-[3rem] border-8 ${theme.border} ${theme.bg} p-10 shadow-2xl relative overflow-hidden min-h-[800px] flex flex-col`}
     >
+      {/* Total Gems Box */}
+      <div className="absolute top-4 right-4 flex items-center gap-2 bg-yellow-100 px-3 py-1.5 rounded-2xl border-2 border-yellow-200 shadow-sm z-20">
+        <Gem className="text-yellow-600" size={18} />
+        <span className="font-black text-yellow-800 text-sm">{totalGems}</span>
+      </div>
+
       <div className={`absolute -top-8 -right-8 ${theme.text} opacity-10 rotate-12`}>
         <Heart size={128} fill="currentColor" />
       </div>
@@ -326,6 +353,7 @@ export const NumberMatch: React.FC = () => {
               {roundsPlayed % 10 === 0 && roundsPlayed > 0 ? 'Quest Complete! 🎉' : `${progress}/10 Fun Rounds Ahead!`}
             </span>
             <span className="text-xs font-black text-slate-400">{roundsPlayed} Total</span>
+            <span className="text-xs font-black text-indigo-500 ml-4">Level {level}</span>
           </div>
           <div className="h-4 bg-white/50 rounded-full overflow-hidden border-2 border-white shadow-inner">
             <motion.div 

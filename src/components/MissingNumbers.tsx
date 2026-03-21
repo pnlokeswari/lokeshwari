@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Map, Gem, Compass, Trophy, RefreshCw, CheckCircle2, XCircle, Search, Sparkles } from 'lucide-react';
+import { useGems } from '../context/GemsContext';
+import { useAchievements } from '../context/AchievementsContext';
 
 interface GameState {
   sequence: (number | null)[];
@@ -12,7 +14,12 @@ interface GameState {
 const CELEBRATION_EMOJIS = ['😊', '😄', '⭐', '✨', '❤️', '🎉', '👍', '🚀', '🐶', '🦄', '🌈'];
 
 export const MissingNumbers: React.FC = () => {
-  const [level, setLevel] = useState(1);
+  const { totalGems, addGems } = useGems();
+  const { unlockAchievement } = useAchievements();
+  const [level, setLevel] = useState(() => {
+    const saved = localStorage.getItem('missing-numbers-level');
+    return saved ? parseInt(saved) : 1;
+  });
   const [score, setScore] = useState(0);
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
@@ -78,6 +85,7 @@ export const MissingNumbers: React.FC = () => {
       const emoji = CELEBRATION_EMOJIS[Math.floor(Math.random() * CELEBRATION_EMOJIS.length)];
       setFeedback({ idx: activeGapIdx, type: 'correct', emoji });
       setScore(s => s + 20);
+      addGems(4);
       setMatchFeedback(emoji);
       setTimeout(() => setMatchFeedback(null), 1000);
 
@@ -90,14 +98,21 @@ export const MissingNumbers: React.FC = () => {
         }, 600);
       } else {
         setIsComplete(true);
+        if (level >= 5) {
+          unlockAchievement('island-explorer');
+        }
         setTimeout(() => {
-          if (level < 5) setLevel(l => l + 1);
-          else generateGame(level);
+          setLevel(l => {
+            const next = l + 1;
+            localStorage.setItem('missing-numbers-level', next.toString());
+            return next;
+          });
         }, 2000);
       }
     } else {
       setFeedback({ idx: activeGapIdx, type: 'wrong', emoji: '🚀' });
-      setScore(s => Math.max(0, s - 5));
+      setScore(s => s - 5);
+      addGems(-1);
       setTimeout(() => setFeedback(null), 1000);
     }
   };
@@ -108,6 +123,12 @@ export const MissingNumbers: React.FC = () => {
       animate={{ opacity: 1, scale: 1 }}
       className="bg-amber-50 rounded-[3rem] border-8 border-amber-200 p-8 shadow-2xl relative overflow-hidden"
     >
+      {/* Total Gems Box */}
+      <div className="absolute top-4 right-4 flex items-center gap-2 bg-yellow-100 px-3 py-1.5 rounded-2xl border-2 border-yellow-200 shadow-sm z-20">
+        <Gem className="text-yellow-600" size={18} />
+        <span className="font-black text-yellow-800 text-sm">{totalGems}</span>
+      </div>
+
       {/* Thematic Elements */}
       <div className="absolute top-0 left-0 w-full h-2 bg-amber-200/50" />
       <div className="absolute bottom-0 left-0 w-full h-2 bg-amber-200/50" />

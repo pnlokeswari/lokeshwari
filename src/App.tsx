@@ -11,6 +11,11 @@ import { OppositesGame } from './components/OppositesGame';
 import { MissingNumbers } from './components/MissingNumbers';
 import { NumberMatch } from './components/NumberMatch';
 import { FoodGroupGame } from './components/FoodGroupGame';
+import { GKQuiz } from './components/GKQuiz';
+import { GemsProvider } from './context/GemsContext';
+import { AchievementsProvider } from './context/AchievementsContext';
+import { AchievementNotification } from './components/AchievementNotification';
+import { TrophyRoom } from './components/TrophyRoom';
 
 export default function App() {
   const [addedCities, setAddedCities] = useState<City[]>(() => {
@@ -59,8 +64,11 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-sky-50 text-slate-900 font-sans selection:bg-yellow-200 selection:text-yellow-900">
-      {/* Header */}
+    <AchievementsProvider>
+      <GemsProvider>
+        <div className="min-h-screen bg-sky-50 text-slate-900 font-sans selection:bg-yellow-200 selection:text-yellow-900">
+          <AchievementNotification />
+          {/* Header */}
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b-4 border-sky-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
@@ -144,6 +152,8 @@ export default function App() {
           <div className="lg:col-span-4 space-y-8">
             <div className="sticky top-24 space-y-8">
               <MathPuzzle />
+              <TrophyRoom />
+              <GKQuiz />
               <FoodGroupGame />
               <NumberMatch />
               <OppositesGame />
@@ -177,5 +187,7 @@ export default function App() {
         existingIds={addedCities.map(c => c.id)}
       />
     </div>
+      </GemsProvider>
+    </AchievementsProvider>
   );
 }

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { Star, Trophy, RefreshCw, CheckCircle2, Sparkles, Gem, Heart } from 'lucide-react';
+import { useGems } from '../context/GemsContext';
+import { useAchievements } from '../context/AchievementsContext';
 
 interface OppositePair {
   id: string;
@@ -106,6 +108,8 @@ const WORD_SETS: OppositePair[][] = [
 const CELEBRATION_EMOJIS = ['😊', '😄', '⭐', '✨', '❤️', '🎉', '👍', '🚀', '🐶', '🦄', '🌈'];
 
 export const OppositesGame: React.FC = () => {
+  const { totalGems, addGems } = useGems();
+  const { unlockAchievement } = useAchievements();
   const [leftWords, setLeftWords] = useState<OppositePair[]>([]);
   const [rightWords, setRightWords] = useState<OppositePair[]>([]);
   const [selectedLeft, setSelectedLeft] = useState<string | null>(null);
@@ -125,6 +129,10 @@ export const OppositesGame: React.FC = () => {
   const [roundsPlayed, setRoundsPlayed] = useState(() => {
     const saved = localStorage.getItem('opposites-rounds');
     return saved ? parseInt(saved) : 0;
+  });
+  const [level, setLevel] = useState(() => {
+    const saved = localStorage.getItem('opposites-level');
+    return saved ? parseInt(saved) : 1;
   });
 
   const progress = useMemo(() => (roundsPlayed % 10) + 1, [roundsPlayed]);
@@ -204,6 +212,7 @@ export const OppositesGame: React.FC = () => {
       setMatches(newMatches);
       setSelectedLeft(null);
       setScore(s => s + 20);
+      addGems(3);
       const emoji = CELEBRATION_EMOJIS[Math.floor(Math.random() * CELEBRATION_EMOJIS.length)];
       setMatchFeedback(emoji);
       setTimeout(() => setMatchFeedback(null), 1500);
@@ -222,6 +231,14 @@ export const OppositesGame: React.FC = () => {
         const newRounds = roundsPlayed + 1;
         setRoundsPlayed(newRounds);
         localStorage.setItem('opposites-rounds', newRounds.toString());
+        
+        const nextLevel = level + 1;
+        setLevel(nextLevel);
+        localStorage.setItem('opposites-level', nextLevel.toString());
+
+        if (newRounds >= 10) {
+          unlockAchievement('opposite-expert');
+        }
 
         const newHistory = [currentSetId, ...history].slice(0, 10);
         setHistory(newHistory);
@@ -239,7 +256,8 @@ export const OppositesGame: React.FC = () => {
       }
     } else {
       setSelectedLeft(null);
-      setScore(s => Math.max(0, s - 5));
+      setScore(s => s - 5);
+      addGems(-1);
     }
   };
 
@@ -249,6 +267,12 @@ export const OppositesGame: React.FC = () => {
       animate={{ opacity: 1, y: 0 }}
       className="bg-white rounded-[2.5rem] border-4 border-emerald-300 p-8 shadow-xl shadow-emerald-100 relative overflow-hidden min-h-[600px] flex flex-col"
     >
+      {/* Total Gems Box */}
+      <div className="absolute top-4 right-4 flex items-center gap-2 bg-yellow-100 px-3 py-1.5 rounded-2xl border-2 border-yellow-200 shadow-sm z-20">
+        <Gem className="text-yellow-600" size={18} />
+        <span className="font-black text-yellow-800 text-sm">{totalGems}</span>
+      </div>
+
       {/* Decorations */}
       <div className="absolute top-2 right-2 text-emerald-100 rotate-12">
         <Sparkles size={48} fill="currentColor" />
@@ -261,7 +285,10 @@ export const OppositesGame: React.FC = () => {
             <span className="text-xs font-black uppercase tracking-widest text-emerald-600">
               {roundsPlayed % 10 === 0 && roundsPlayed > 0 ? 'Quest Complete! 🎉' : `${progress}/10 Fun Rounds Ahead!`}
             </span>
-            <span className="text-xs font-black text-slate-400">{roundsPlayed} Total</span>
+            <div className="flex items-center gap-4">
+              <span className="text-xs font-black text-slate-400">{roundsPlayed} Total</span>
+              <span className="text-xs font-black text-emerald-500">Level {level}</span>
+            </div>
           </div>
           <div className="h-3 bg-emerald-50 rounded-full overflow-hidden border-2 border-emerald-100 shadow-inner">
             <motion.div 
