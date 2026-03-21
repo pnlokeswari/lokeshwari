@@ -12,7 +12,6 @@ import { MissingNumbers } from './components/MissingNumbers';
 import { NumberMatch } from './components/NumberMatch';
 import { FoodGroupGame } from './components/FoodGroupGame';
 import { GKQuiz } from './components/GKQuiz';
-import { AnimalSoundsGame } from './components/AnimalSoundsGame';
 import { GemsProvider } from './context/GemsContext';
 import { AchievementsProvider } from './context/AchievementsContext';
 import { AchievementNotification } from './components/AchievementNotification';
@@ -153,7 +152,6 @@ export default function App() {
           <div className="lg:col-span-4 space-y-8">
             <div className="sticky top-24 space-y-8">
               <MathPuzzle />
-              <AnimalSoundsGame />
               <TrophyRoom />
               <GKQuiz />
               <FoodGroupGame />
