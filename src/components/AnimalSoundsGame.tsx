@@ -96,7 +96,7 @@ export const AnimalSoundsGame: React.FC = () => {
     }
   };
 
-  const pcmToWav = (pcmData: Uint8Array, sampleRate: number = 24000) => {
+  const pcmToWavBase64 = (pcmData: Uint8Array, sampleRate: number = 24000) => {
     const buffer = new ArrayBuffer(44 + pcmData.length);
     const view = new DataView(buffer);
 
@@ -110,9 +110,9 @@ export const AnimalSoundsGame: React.FC = () => {
     view.setUint32(12, 0x666d7420, false); // "fmt "
     // format chunk length
     view.setUint32(16, 16, true);
-    // sample format (raw)
+    // sample format (PCM = 1)
     view.setUint16(20, 1, true);
-    // channel count
+    // channel count (Mono = 1)
     view.setUint16(22, 1, true);
     // sample rate
     view.setUint32(24, sampleRate, true);
@@ -132,19 +132,30 @@ export const AnimalSoundsGame: React.FC = () => {
       view.setUint8(44 + i, pcmData[i]);
     }
 
-    return new Blob([buffer], { type: 'audio/wav' });
+    // Convert to base64
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
   };
 
   const playSound = async () => {
     if (isLoading) return;
     setAudioError(null);
     
-    // Resume context just in case
-    getAudioContext();
+    // Force resume context
+    const ctx = getAudioContext();
+    if (ctx.state === 'suspended') await ctx.resume();
     
-    if (audioUrl) {
+    if (audioUrl && audioUrl.startsWith('data:audio/wav')) {
       const audio = new Audio(audioUrl);
-      audio.play().catch(e => console.error('Play failed:', e));
+      audio.play().catch(e => {
+        console.error('Cached play failed:', e);
+        setAudioError('Click again');
+      });
       return;
     }
 
@@ -175,12 +186,13 @@ export const AnimalSoundsGame: React.FC = () => {
           uint8Array[i] = binaryString.charCodeAt(i);
         }
         
-        const wavBlob = pcmToWav(uint8Array, 24000);
-        const url = URL.createObjectURL(wavBlob);
-        setAudioUrl(url);
-        const audio = new Audio(url);
+        const wavBase64 = pcmToWavBase64(uint8Array, 24000);
+        const dataUri = `data:audio/wav;base64,${wavBase64}`;
+        setAudioUrl(dataUri);
+        
+        const audio = new Audio(dataUri);
         audio.play().catch(e => {
-          console.warn('HTMLAudioElement failed, falling back to WebAudio:', e);
+          console.warn('HTMLAudio failed, trying WebAudio fallback:', e);
           playPcm(base64Audio);
         });
       } else {
@@ -334,7 +346,7 @@ export const AnimalSoundsGame: React.FC = () => {
             <p className="text-slate-600 font-black uppercase tracking-widest text-sm">
               {isLoading ? 'Generating Sound...' : audioError ? `Error: ${audioError}` : 'Click to hear the animal!'}
             </p>
-            <div className="flex gap-4">
+            <div className="flex flex-wrap justify-center gap-4">
               {audioStatus === 'locked' && (
                 <button 
                   onClick={() => getAudioContext()}
@@ -344,12 +356,25 @@ export const AnimalSoundsGame: React.FC = () => {
                 </button>
               )}
               <button 
+                onClick={() => {
+                  audioContextRef.current = null;
+                  getAudioContext();
+                  testAudio();
+                }}
+                className="text-xs font-black text-orange-500 underline uppercase tracking-wider"
+              >
+                Force Reset Sound
+              </button>
+              <button 
                 onClick={testAudio}
                 className="text-xs font-black text-slate-400 underline uppercase tracking-wider"
               >
                 Test Beep
               </button>
             </div>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter mt-2">
+              🔊 Check your device volume & silent mode
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4 w-full">
