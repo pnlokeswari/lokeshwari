@@ -45,20 +45,50 @@ export const AnimalSoundsGame: React.FC = () => {
     generateRound();
   }, [generateRound]);
 
+  const [audioError, setAudioError] = useState<string | null>(null);
+
+  const testAudio = () => {
+    try {
+      const AudioContextClass = (window.AudioContext || (window as any).webkitAudioContext);
+      const audioContext = new AudioContextClass();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.5);
+      console.log('Test beep played');
+    } catch (e) {
+      console.error('Audio test failed:', e);
+      setAudioError('Browser audio blocked');
+    }
+  };
+
   const playSound = async () => {
     if (isLoading) return;
+    setAudioError(null);
+    
     if (audioUrl) {
-      const audio = new Audio(audioUrl);
-      audio.play();
+      playPcm(audioUrl.split(',')[1] || audioUrl);
       return;
     }
 
     setIsLoading(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+      if (!process.env.GEMINI_API_KEY) {
+        throw new Error('API Key missing');
+      }
+
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text: `Make the sound of a ${currentAnimal.name}: ${currentAnimal.sound}` }] }],
+        contents: [{ parts: [{ text: currentAnimal.sound }] }],
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
@@ -71,42 +101,59 @@ export const AnimalSoundsGame: React.FC = () => {
 
       const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
       if (base64Audio) {
-        // Gemini TTS returns raw PCM 16-bit mono at 24000Hz.
-        // We need to add a WAV header to make it playable by the browser's Audio element.
-        const pcmData = Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0));
-        const wavHeader = new ArrayBuffer(44);
-        const view = new DataView(wavHeader);
-        
-        // RIFF chunk descriptor
-        view.setUint32(0, 0x52494646, false); // "RIFF"
-        view.setUint32(4, 36 + pcmData.length, true); // chunk size
-        view.setUint32(8, 0x57415645, false); // "WAVE"
-        
-        // "fmt " sub-chunk
-        view.setUint32(12, 0x666d7420, false); // "fmt "
-        view.setUint32(16, 16, true); // subchunk1size (16 for PCM)
-        view.setUint16(20, 1, true); // audio format (1 for PCM)
-        view.setUint16(22, 1, true); // num channels (1 for mono)
-        view.setUint32(24, 24000, true); // sample rate (24000Hz)
-        view.setUint32(28, 24000 * 2, true); // byte rate (SampleRate * NumChannels * BitsPerSample/8)
-        view.setUint16(32, 2, true); // block align (NumChannels * BitsPerSample/8)
-        view.setUint16(34, 16, true); // bits per sample (16 bits)
-        
-        // "data" sub-chunk
-        view.setUint32(36, 0x64617461, false); // "data"
-        view.setUint32(40, pcmData.length, true); // subchunk2size
-        
-        const blob = new Blob([wavHeader, pcmData], { type: 'audio/wav' });
-        const url = URL.createObjectURL(blob);
-        
-        setAudioUrl(url);
-        const audio = new Audio(url);
-        audio.play();
+        setAudioUrl(`data:audio/pcm;base64,${base64Audio}`);
+        playPcm(base64Audio);
+      } else {
+        setAudioError('No sound data');
       }
     } catch (error) {
-      console.error('Error generating sound:', error);
+      console.error('Error:', error);
+      setAudioError('Sound failed');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const playPcm = (base64Data: string) => {
+    try {
+      const AudioContextClass = (window.AudioContext || (window as any).webkitAudioContext);
+      const audioContext = new AudioContextClass({ sampleRate: 24000 });
+      
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+
+      const binaryString = atob(base64Data);
+      const arrayBuffer = new ArrayBuffer(binaryString.length);
+      const uint8Array = new Uint8Array(arrayBuffer);
+      
+      for (let i = 0; i < binaryString.length; i++) {
+        uint8Array[i] = binaryString.charCodeAt(i);
+      }
+      
+      const dataView = new DataView(arrayBuffer);
+      const float32Data = new Float32Array(binaryString.length / 2);
+      
+      for (let i = 0; i < float32Data.length; i++) {
+        // Gemini L16 is little-endian (true)
+        float32Data[i] = dataView.getInt16(i * 2, true) / 32768.0;
+      }
+      
+      const buffer = audioContext.createBuffer(1, float32Data.length, 24000);
+      buffer.getChannelData(0).set(float32Data);
+      
+      const source = audioContext.createBufferSource();
+      source.buffer = buffer;
+      source.connect(audioContext.destination);
+      
+      source.onended = () => {
+        audioContext.close();
+      };
+      
+      source.start();
+      console.log('Audio playback started');
+    } catch (e) {
+      console.error('Failed to play PCM audio:', e);
     }
   };
 
@@ -165,6 +212,8 @@ export const AnimalSoundsGame: React.FC = () => {
             className={`w-32 h-32 rounded-full flex items-center justify-center shadow-lg transition-all border-b-8 ${
               isLoading 
                 ? 'bg-slate-100 border-slate-300 cursor-not-allowed' 
+                : audioError 
+                ? 'bg-red-500 border-red-700 text-white'
                 : 'bg-pink-500 hover:bg-pink-600 border-pink-700 text-white'
             }`}
           >
@@ -175,9 +224,19 @@ export const AnimalSoundsGame: React.FC = () => {
             )}
           </motion.button>
 
-          <p className="text-slate-600 font-black uppercase tracking-widest text-sm">
-            {isLoading ? 'Generating Sound...' : 'Click to hear the animal!'}
-          </p>
+          <div className="flex flex-col items-center gap-2">
+            <p className="text-slate-600 font-black uppercase tracking-widest text-sm">
+              {isLoading ? 'Generating Sound...' : audioError ? `Error: ${audioError}` : 'Click to hear the animal!'}
+            </p>
+            {audioError && (
+              <button 
+                onClick={testAudio}
+                className="text-xs font-black text-pink-500 underline uppercase tracking-wider"
+              >
+                Try Audio Test Beep
+              </button>
+            )}
+          </div>
 
           <div className="grid grid-cols-2 gap-4 w-full">
             {options.map((animal) => (
