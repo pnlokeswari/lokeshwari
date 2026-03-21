@@ -17,15 +17,14 @@ export const GemsProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     localStorage.setItem('total-gems', totalGems.toString());
-  }, [totalGems]);
+    
+    // Check for achievements
+    if (totalGems >= 100) unlockAchievement('gem-collector');
+    if (totalGems >= 500) unlockAchievement('gem-hoarder');
+  }, [totalGems, unlockAchievement]);
 
   const addGems = (amount: number) => {
-    setTotalGems(prev => {
-      const next = prev + amount;
-      if (next >= 100) unlockAchievement('gem-collector');
-      if (next >= 500) unlockAchievement('gem-hoarder');
-      return next;
-    });
+    setTotalGems(prev => prev + amount);
   };
 
   return (

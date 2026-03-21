@@ -45,6 +45,9 @@ const INITIAL_ACHIEVEMENTS: Achievement[] = [
   
   // Food Group Game
   { id: 'nutritionist', title: 'Nutritionist', description: 'Finish 10 Food Group rounds', emoji: '🍎', unlocked: false, claimed: false, reward: 50, gameId: 'food-group-game' },
+  
+  // Animal Sounds Game
+  { id: 'animal-expert', title: 'Animal Expert', description: 'Identify 10 animals by sound', emoji: '🦁', unlocked: false, claimed: false, reward: 50, gameId: 'animal-sounds-game' },
 ];
 
 const AchievementsContext = createContext<AchievementsContextType | undefined>(undefined);
@@ -82,16 +85,17 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         const updated = [...prev];
         updated[index] = { ...updated[index], unlocked: true };
         
-        // Trigger notification
-        setNewAchievement(updated[index]);
-        
-        // Celebrate
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#FFD700', '#FFA500', '#FF4500']
-        });
+        // Use setTimeout to defer side effects and avoid "update while rendering" warnings
+        setTimeout(() => {
+          setNewAchievement(updated[index]);
+          
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#FFD700', '#FFA500', '#FF4500']
+          });
+        }, 0);
 
         return updated;
       }
