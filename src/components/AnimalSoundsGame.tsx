@@ -96,24 +96,62 @@ export const AnimalSoundsGame: React.FC = () => {
     }
   };
 
+  const pcmToWav = (pcmData: Uint8Array, sampleRate: number = 24000) => {
+    const buffer = new ArrayBuffer(44 + pcmData.length);
+    const view = new DataView(buffer);
+
+    // RIFF identifier
+    view.setUint32(0, 0x52494646, false); // "RIFF"
+    // file length
+    view.setUint32(4, 36 + pcmData.length, true);
+    // RIFF type
+    view.setUint32(8, 0x57415645, false); // "WAVE"
+    // format chunk identifier
+    view.setUint32(12, 0x666d7420, false); // "fmt "
+    // format chunk length
+    view.setUint32(16, 16, true);
+    // sample format (raw)
+    view.setUint16(20, 1, true);
+    // channel count
+    view.setUint16(22, 1, true);
+    // sample rate
+    view.setUint32(24, sampleRate, true);
+    // byte rate (sample rate * block align)
+    view.setUint32(28, sampleRate * 2, true);
+    // block align (channel count * bytes per sample)
+    view.setUint16(32, 2, true);
+    // bits per sample
+    view.setUint16(34, 16, true);
+    // data chunk identifier
+    view.setUint32(36, 0x64617461, false); // "data"
+    // data chunk length
+    view.setUint32(40, pcmData.length, true);
+
+    // write the PCM data
+    for (let i = 0; i < pcmData.length; i++) {
+      view.setUint8(44 + i, pcmData[i]);
+    }
+
+    return new Blob([buffer], { type: 'audio/wav' });
+  };
+
   const playSound = async () => {
     if (isLoading) return;
     setAudioError(null);
     
-    // Ensure AudioContext is ready on user click
-    const ctx = getAudioContext();
+    // Resume context just in case
+    getAudioContext();
     
     if (audioUrl) {
-      playPcm(audioUrl.split(',')[1] || audioUrl);
+      const audio = new Audio(audioUrl);
+      audio.play().catch(e => console.error('Play failed:', e));
       return;
     }
 
     setIsLoading(true);
     try {
       const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        throw new Error('API Key missing');
-      }
+      if (!apiKey) throw new Error('API Key missing');
 
       const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
@@ -131,8 +169,20 @@ export const AnimalSoundsGame: React.FC = () => {
 
       const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
       if (base64Audio) {
-        setAudioUrl(`data:audio/pcm;base64,${base64Audio}`);
-        playPcm(base64Audio);
+        const binaryString = atob(base64Audio);
+        const uint8Array = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          uint8Array[i] = binaryString.charCodeAt(i);
+        }
+        
+        const wavBlob = pcmToWav(uint8Array, 24000);
+        const url = URL.createObjectURL(wavBlob);
+        setAudioUrl(url);
+        const audio = new Audio(url);
+        audio.play().catch(e => {
+          console.warn('HTMLAudioElement failed, falling back to WebAudio:', e);
+          playPcm(base64Audio);
+        });
       } else {
         setAudioError('No sound data');
       }
