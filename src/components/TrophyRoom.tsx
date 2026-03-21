@@ -4,7 +4,7 @@ import { Trophy, Lock, CheckCircle2, Coins, Gift, Sparkles } from 'lucide-react'
 import { useAchievements } from '../context/AchievementsContext';
 
 export const TrophyRoom: React.FC = () => {
-  const { achievements, totalCoins } = useAchievements();
+  const { achievements, totalCoins, claimAchievement } = useAchievements();
   const unlockedCount = achievements.filter(a => a.unlocked).length;
   const progress = (unlockedCount / achievements.length) * 100;
 
@@ -31,31 +31,47 @@ export const TrophyRoom: React.FC = () => {
             {achievements.map((achievement) => (
               <div
                 key={achievement.id}
-                className={`p-4 rounded-2xl border-4 transition-all flex items-center gap-4 ${
+                className={`p-4 rounded-2xl border-4 transition-all flex flex-col gap-3 ${
                   achievement.unlocked
                     ? 'bg-yellow-50 border-yellow-200 shadow-md'
                     : 'bg-slate-50 border-slate-100 opacity-60 grayscale'
                 }`}
               >
-                <div className={`text-3xl p-2 rounded-xl ${achievement.unlocked ? 'bg-white' : 'bg-slate-200'}`}>
-                  {achievement.unlocked ? achievement.emoji : <Lock size={24} className="text-slate-400" />}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <h4 className={`font-black uppercase tracking-tight leading-none ${achievement.unlocked ? 'text-yellow-700' : 'text-slate-500'}`}>
-                      {achievement.title}
-                    </h4>
-                    <div className="flex items-center gap-1 bg-yellow-100 px-2 py-0.5 rounded-full border border-yellow-200">
-                      <Coins size={10} className="text-yellow-600" />
-                      <span className="text-[10px] font-black text-yellow-700">+{achievement.reward}</span>
-                    </div>
+                <div className="flex items-center gap-4">
+                  <div className={`text-3xl p-2 rounded-xl ${achievement.unlocked ? 'bg-white' : 'bg-slate-200'}`}>
+                    {achievement.unlocked ? achievement.emoji : <Lock size={24} className="text-slate-400" />}
                   </div>
-                  <p className="text-[10px] font-bold text-slate-400 mt-1">
-                    {achievement.description}
-                  </p>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className={`font-black uppercase tracking-tight leading-none ${achievement.unlocked ? 'text-yellow-700' : 'text-slate-500'}`}>
+                        {achievement.title}
+                      </h4>
+                      {!achievement.claimed && (
+                        <div className="flex items-center gap-1 bg-yellow-100 px-2 py-0.5 rounded-full border border-yellow-200">
+                          <Coins size={10} className="text-yellow-600" />
+                          <span className="text-[10px] font-black text-yellow-700">+{achievement.reward}</span>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-[10px] font-bold text-slate-400 mt-1">
+                      {achievement.description}
+                    </p>
+                  </div>
+                  {achievement.claimed && (
+                    <CheckCircle2 className="text-green-500" size={20} />
+                  )}
                 </div>
-                {achievement.unlocked && (
-                  <CheckCircle2 className="text-green-500" size={20} />
+
+                {achievement.unlocked && !achievement.claimed && (
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => claimAchievement(achievement.id)}
+                    className="w-full bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-black py-2 rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-colors"
+                  >
+                    <Coins size={14} />
+                    COLLECT REWARD!
+                  </motion.button>
                 )}
               </div>
             ))}
